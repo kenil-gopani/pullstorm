@@ -5,7 +5,7 @@ import json
 
 # Get environment variables set by GitHub Actions
 GITHUB_TOKEN = os.getenv('GTH_TOK') # Your custom secret for the PAT
-GITHUB_USERNAME = os.getenv('GH_USERNAME') # Your GitHub username
+GITHUB_USERNAME = os.getenv('GH_USERNAME') # This will now be 'kenil-gopani' from the workflow
 
 def get_merged_prs(username, start_date_str):
     """
