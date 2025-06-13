@@ -1,4 +1,4 @@
-name: Auto 15 PRs Daily
+name: Auto 12 PRs Daily
 
 on:
   schedule:
@@ -28,19 +28,17 @@ jobs:
       - name: Authenticate GitHub CLI
         run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
-      - name: Generate and Merge 15 PRs
+      - name: Generate and Merge 12 PRs
         run: |
-          for i in {1..15}; do
+          for i in {1..12}; do
             BRANCH="auto-pr-$i-$(date +%s)"
             git checkout main
             git pull origin main
             git checkout -b "$BRANCH"
-
             echo "Auto change $i at $(date)" > "file-$i.txt"
             git add "file-$i.txt"
             git commit -m "Auto PR $i"
             git push origin "$BRANCH"
-
             gh pr create --base main --head "$BRANCH" --title "Auto PR $i" --body "Created automatically"
             gh pr merge "$BRANCH" --squash --delete-branch --yes
           done
