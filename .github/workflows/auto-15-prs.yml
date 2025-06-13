@@ -23,4 +23,32 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-        with:
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "AutoBot"
+          git config --global user.email "autobot@example.com"
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt update
+          sudo apt install gh -y
+
+      - name: Authenticate GitHub CLI
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Generate and Merge 1 PR
+        run: |
+          i=$((RANDOM % 10000))
+          BRANCH="auto-pr-$i-$(date +%s)"
+          git checkout main
+          git pull origin main
+          git checkout -b "$BRANCH"
+          echo "Auto change $i at $(date)" > "file-$i.txt"
+          git add "file-$i.txt"
+          git commit -m "Auto PR $i"
+          git push origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" --title "Auto PR $i" --body "Created automatically"
+          gh pr merge "$BRANCH" --squash --delete-branch --yes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
