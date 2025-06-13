@@ -34,7 +34,7 @@ jobs:
         id: pr_data
         env:
           GTH_TOK: ${{ secrets.GTH_TOK }} # Your Personal Access Token secret
-          GH_USERNAME: your-github-username # Replace with your actual GitHub username
+          GH_USERNAME: kenil-gopani # <--- Updated to your GitHub username
         run: python pr_tracker.py
 
       - name: Calculate progress
