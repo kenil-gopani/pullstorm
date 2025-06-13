@@ -1,0 +1,93 @@
+name: Daily PR Goal Tracker
+
+on:
+  schedule:
+    # Runs at 5 PM IST (11:30 UTC), Monday-Friday.
+    # Current time in Surat, Gujarat, India is UTC+5:30.
+    # To run at 17:00 IST, it's 17:00 - 5:30 = 11:30 UTC.
+    - cron: '30 11 * * 1-5'
+
+  workflow_dispatch: # Allows you to manually trigger the workflow from GitHub Actions tab
+
+jobs:
+  track_and_notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Needed to checkout the repo
+      actions: write # Needed if you want to create an issue
+      issues: write # Needed if you want to create an issue
+      pull-requests: write # Needed if you want to comment on PRs (though we're just reading)
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Python dependencies
+        run: pip install requests
+
+      - name: Run PR tracking script
+        id: pr_data
+        env:
+          GTH_TOK: ${{ secrets.GTH_TOK }} # Your Personal Access Token secret
+          GH_USERNAME: your-github-username # Replace with your actual GitHub username
+        run: python pr_tracker.py
+
+      - name: Calculate progress
+        id: progress_message
+        run: |
+          PRS_TODAY=${{ steps.pr_data.outputs.prs_today }}
+          PRS_MONTH=${{ steps.pr_data.outputs.prs_month }}
+          PRS_YEAR=${{ steps.pr_data.outputs.prs_year }}
+
+          MONTHLY_GOAL=48
+          DAILY_GOAL=2
+          YEARLY_GOAL=1024
+
+          MESSAGE=""
+          # Daily Progress
+          if (( PRS_TODAY < DAILY_GOAL )); then
+            MESSAGE=":warning: Today's PRs: $PRS_TODAY / $DAILY_GOAL. Keep pushing!"
+          else
+            MESSAGE=":white_check_mark: Daily Goal Achieved! You merged $PRS_TODAY PRs today."
+          fi
+
+          # Monthly Progress
+          if (( PRS_MONTH < MONTHLY_GOAL )); then
+            REMAINING_MONTH=$(( MONTHLY_GOAL - PRS_MONTH ))
+            MESSAGE="$MESSAGE\n:date: Monthly Progress: $PRS_MONTH / $MONTHLY_GOAL. Need $REMAINING_MONTH more."
+          else
+            MESSAGE="$MESSAGE\n:sparkles: Monthly Goal Achieved! You merged $PRS_MONTH PRs this month."
+          fi
+
+          # Yearly Progress
+          if (( PRS_YEAR < YEARLY_GOAL )); then
+            REMAINING_YEAR=$(( YEARLY_GOAL - PRS_YEAR ))
+            CURRENT_YEAR_DAYS_PASSED=$(date +%j) # Day of year (1-366)
+            DAYS_REMAINING=$(( 365 - CURRENT_YEAR_DAYS_PASSED ))
+
+            if (( DAYS_REMAINING > 0 )); then
+              # Use 'bc' for floating-point division
+              AVG_NEEDED_PER_DAY=$(echo "scale=2; $REMAINING_YEAR / $DAYS_REMAINING" | bc)
+              MESSAGE="$MESSAGE\n:trophy: Yearly Goal (Pull Shark Gold): $PRS_YEAR / $YEARLY_GOAL. Need $REMAINING_YEAR more. (~$AVG_NEEDED_PER_DAY PRs/day remaining)"
+            else
+              MESSAGE="$MESSAGE\n:trophy: Yearly Goal (Pull Shark Gold): $PRS_YEAR / $YEARLY_GOAL. Need $REMAINING_YEAR more. (Year almost over!)"
+            fi
+          else
+            MESSAGE="$MESSAGE\n:fire: **PULL SHARK GOLD ACHIEVED!** You've merged $PRS_YEAR PRs this year! :fire:"
+          fi
+
+          echo "::set-output name=message::$MESSAGE"
+
+      - name: Create or Update Tracking Issue
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: 1 # <<-- IMPORTANT: Change this to your actual GitHub Issue number!
+          body: |
+            ## PR Tracker Update for ${{ github.actor }} - ${{ format('{0}', github.event.release.published_at || github.event.issue.updated_at || github.event.pull_request.updated_at || github.event.head_commit.timestamp || github.event.repository.pushed_at || github.event.sender.login || github.event.workflow_run.created_at || github.event.deployment_status.updated_at || github.event.created_at || 'now') }}
+            ${{ steps.progress_message.outputs.message }}
+          token: ${{ secrets.GITHUB_TOKEN }} # Uses the default token for repo operations
