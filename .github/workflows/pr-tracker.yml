@@ -90,4 +90,4 @@ jobs:
           body: |
             ## PR Tracker Update for ${{ github.actor }} - ${{ format('{0}', github.event.release.published_at || github.event.issue.updated_at || github.event.pull_request.updated_at || github.event.head_commit.timestamp || github.event.repository.pushed_at || github.event.sender.login || github.event.workflow_run.created_at || github.event.deployment_status.updated_at || github.event.created_at || 'now') }}
             ${{ steps.progress_message.outputs.message }}
-          token: ${{ secrets.GITHUB_TOKEN }} # Uses the default token for repo operations
+          token: ${{ secrets.GTH_TOK }} # Uses the default token for repo operations
