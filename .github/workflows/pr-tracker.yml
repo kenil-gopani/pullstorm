@@ -81,7 +81,7 @@ jobs:
             MESSAGE="$MESSAGE\n:fire: **PULL SHARK GOLD ACHIEVED!** You've merged $PRS_YEAR PRs this year! :fire:"
           fi
 
-          echo "::set-output name=message::$MESSAGE"
+          echo "message=$MESSAGE" >> $GITHUB_OUTPUT
 
       - name: Create or Update Tracking Issue
         uses: peter-evans/create-or-update-comment@v3
